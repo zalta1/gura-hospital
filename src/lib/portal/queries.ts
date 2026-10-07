@@ -619,6 +619,27 @@ export async function fetchAuditLog() {
   return data ?? [];
 }
 
+export async function setDoctorAppointmentStatus(
+  actorDoctorId: string,
+  appointmentId: string,
+  status: "confirmed" | "cancelled",
+) {
+  if (!actorDoctorId) throw new Error("You can only update your own appointments.");
+  if (isLocalPortalDemo()) return local.setDoctorAppointmentStatus(actorDoctorId, appointmentId, status);
+  const patch =
+    status === "confirmed"
+      ? { status, pipeline_stage: "confirmed" as const }
+      : { status };
+  const { data, error } = await supabase
+    .from("appointments")
+    .update(patch)
+    .eq("id", appointmentId)
+    .eq("doctor_id", actorDoctorId)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error("You can only update your own appointments.");
+}
+
 export async function fetchDoctorAppointments(doctorId: string) {
   if (!doctorId) return [];
   if (isLocalPortalDemo()) {

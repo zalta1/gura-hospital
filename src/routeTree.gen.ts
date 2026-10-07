@@ -19,6 +19,7 @@ import { Route as FindADoctorRouteImport } from './routes/find-a-doctor'
 import { Route as ForPatientsRouteImport } from './routes/for-patients'
 import { Route as ForPhysiciansRouteImport } from './routes/for-physicians'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PatientRouteImport } from './routes/patient'
 import { Route as ProgramsServicesRouteImport } from './routes/programs-services'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -30,11 +31,28 @@ import { Route as AdminDemoAccountsRouteImport } from './routes/admin.demo-accou
 import { Route as AdminEscalationsRouteImport } from './routes/admin.escalations'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
+import { Route as ApiSlotsRouteImport } from './routes/api.slots'
 import { Route as DoctorIndexRouteImport } from './routes/doctor.index'
+import { Route as DoctorAvailabilityRouteImport } from './routes/doctor.availability'
 import { Route as DoctorFollowupsRouteImport } from './routes/doctor.followups'
+import { Route as PatientIndexRouteImport } from './routes/patient.index'
+import { Route as PatientAppointmentsRouteImport } from './routes/patient.appointments'
+import { Route as PatientBillingRouteImport } from './routes/patient.billing'
+import { Route as PatientDoctorsRouteImport } from './routes/patient.doctors'
+import { Route as PatientFollowUpRouteImport } from './routes/patient.follow-up'
+import { Route as PatientMedicationsRouteImport } from './routes/patient.medications'
+import { Route as PatientMessagesRouteImport } from './routes/patient.messages'
+import { Route as PatientNotificationsRouteImport } from './routes/patient.notifications'
+import { Route as PatientRecordRouteImport } from './routes/patient.record'
+import { Route as PatientResultsRouteImport } from './routes/patient.results'
+import { Route as PatientSignInRouteImport } from './routes/patient.sign-in'
+import { Route as PatientUpdatesRouteImport } from './routes/patient.updates'
+import { Route as PatientVideoRouteImport } from './routes/patient.video'
 import { Route as SpecialtiesIndexRouteImport } from './routes/specialties.index'
 import { Route as SpecialtiesSlugRouteImport } from './routes/specialties.$slug'
 import { Route as StaffReviewsRouteImport } from './routes/staff.reviews'
+import { Route as ApiDoctorAvailabilityRouteImport } from './routes/api.doctor.availability'
+import { Route as ApiDoctorBlocksRouteImport } from './routes/api.doctor.blocks'
 import { Route as ApiElevenlabsSignedUrlRouteImport } from './routes/api.elevenlabs.signed-url'
 import { Route as ApiNotificationsSendGmailRouteImport } from './routes/api.notifications.send-gmail'
 import { Route as ApiTwilioColdCallRouteImport } from './routes/api.twilio.cold-call'
@@ -95,6 +113,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PatientRoute = PatientRouteImport.update({
+  id: '/patient',
+  path: '/patient',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgramsServicesRoute = ProgramsServicesRouteImport.update({
   id: '/programs-services',
   path: '/programs-services',
@@ -150,15 +173,90 @@ const AdminStaffRoute = AdminStaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiSlotsRoute = ApiSlotsRouteImport.update({
+  id: '/api/slots',
+  path: '/api/slots',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DoctorIndexRoute = DoctorIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DoctorRoute,
+} as any)
+const DoctorAvailabilityRoute = DoctorAvailabilityRouteImport.update({
+  id: '/availability',
+  path: '/availability',
   getParentRoute: () => DoctorRoute,
 } as any)
 const DoctorFollowupsRoute = DoctorFollowupsRouteImport.update({
   id: '/followups',
   path: '/followups',
   getParentRoute: () => DoctorRoute,
+} as any)
+const PatientIndexRoute = PatientIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientAppointmentsRoute = PatientAppointmentsRouteImport.update({
+  id: '/appointments',
+  path: '/appointments',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientBillingRoute = PatientBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientDoctorsRoute = PatientDoctorsRouteImport.update({
+  id: '/doctors',
+  path: '/doctors',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientFollowUpRoute = PatientFollowUpRouteImport.update({
+  id: '/follow-up',
+  path: '/follow-up',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientMedicationsRoute = PatientMedicationsRouteImport.update({
+  id: '/medications',
+  path: '/medications',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientMessagesRoute = PatientMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientNotificationsRoute = PatientNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientRecordRoute = PatientRecordRouteImport.update({
+  id: '/record',
+  path: '/record',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientResultsRoute = PatientResultsRouteImport.update({
+  id: '/results',
+  path: '/results',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientSignInRoute = PatientSignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientUpdatesRoute = PatientUpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
+  getParentRoute: () => PatientRoute,
+} as any)
+const PatientVideoRoute = PatientVideoRouteImport.update({
+  id: '/video',
+  path: '/video',
+  getParentRoute: () => PatientRoute,
 } as any)
 const SpecialtiesIndexRoute = SpecialtiesIndexRouteImport.update({
   id: '/specialties/',
@@ -173,6 +271,16 @@ const SpecialtiesSlugRoute = SpecialtiesSlugRouteImport.update({
 const StaffReviewsRoute = StaffReviewsRouteImport.update({
   id: '/staff/reviews',
   path: '/staff/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDoctorAvailabilityRoute = ApiDoctorAvailabilityRouteImport.update({
+  id: '/api/doctor/availability',
+  path: '/api/doctor/availability',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDoctorBlocksRoute = ApiDoctorBlocksRouteImport.update({
+  id: '/api/doctor/blocks',
+  path: '/api/doctor/blocks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiElevenlabsSignedUrlRoute = ApiElevenlabsSignedUrlRouteImport.update({
@@ -236,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/for-patients': typeof ForPatientsRoute
   '/for-physicians': typeof ForPhysiciansRoute
   '/login': typeof LoginRoute
+  '/patient': typeof PatientRouteWithChildren
   '/programs-services': typeof ProgramsServicesRoute
   '/resources': typeof ResourcesRoute
   '/admin/ai-activity': typeof AdminAiActivityRoute
@@ -246,12 +355,29 @@ export interface FileRoutesByFullPath {
   '/admin/escalations': typeof AdminEscalationsRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/api/slots': typeof ApiSlotsRoute
+  '/doctor/availability': typeof DoctorAvailabilityRoute
   '/doctor/followups': typeof DoctorFollowupsRoute
+  '/patient/appointments': typeof PatientAppointmentsRoute
+  '/patient/billing': typeof PatientBillingRoute
+  '/patient/doctors': typeof PatientDoctorsRoute
+  '/patient/follow-up': typeof PatientFollowUpRoute
+  '/patient/medications': typeof PatientMedicationsRoute
+  '/patient/messages': typeof PatientMessagesRoute
+  '/patient/notifications': typeof PatientNotificationsRoute
+  '/patient/record': typeof PatientRecordRoute
+  '/patient/results': typeof PatientResultsRoute
+  '/patient/sign-in': typeof PatientSignInRoute
+  '/patient/updates': typeof PatientUpdatesRoute
+  '/patient/video': typeof PatientVideoRoute
   '/specialties/$slug': typeof SpecialtiesSlugRoute
   '/staff/reviews': typeof StaffReviewsRoute
   '/admin/': typeof AdminIndexRoute
   '/doctor/': typeof DoctorIndexRoute
+  '/patient/': typeof PatientIndexRoute
   '/specialties/': typeof SpecialtiesIndexRoute
+  '/api/doctor/availability': typeof ApiDoctorAvailabilityRoute
+  '/api/doctor/blocks': typeof ApiDoctorBlocksRoute
   '/api/elevenlabs/signed-url': typeof ApiElevenlabsSignedUrlRoute
   '/api/notifications/send-gmail': typeof ApiNotificationsSendGmailRoute
   '/api/twilio/cold-call': typeof ApiTwilioColdCallRoute
@@ -281,12 +407,29 @@ export interface FileRoutesByTo {
   '/admin/escalations': typeof AdminEscalationsRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/api/slots': typeof ApiSlotsRoute
+  '/doctor/availability': typeof DoctorAvailabilityRoute
   '/doctor/followups': typeof DoctorFollowupsRoute
+  '/patient/appointments': typeof PatientAppointmentsRoute
+  '/patient/billing': typeof PatientBillingRoute
+  '/patient/doctors': typeof PatientDoctorsRoute
+  '/patient/follow-up': typeof PatientFollowUpRoute
+  '/patient/medications': typeof PatientMedicationsRoute
+  '/patient/messages': typeof PatientMessagesRoute
+  '/patient/notifications': typeof PatientNotificationsRoute
+  '/patient/record': typeof PatientRecordRoute
+  '/patient/results': typeof PatientResultsRoute
+  '/patient/sign-in': typeof PatientSignInRoute
+  '/patient/updates': typeof PatientUpdatesRoute
+  '/patient/video': typeof PatientVideoRoute
   '/specialties/$slug': typeof SpecialtiesSlugRoute
   '/staff/reviews': typeof StaffReviewsRoute
   '/admin': typeof AdminIndexRoute
   '/doctor': typeof DoctorIndexRoute
+  '/patient': typeof PatientIndexRoute
   '/specialties': typeof SpecialtiesIndexRoute
+  '/api/doctor/availability': typeof ApiDoctorAvailabilityRoute
+  '/api/doctor/blocks': typeof ApiDoctorBlocksRoute
   '/api/elevenlabs/signed-url': typeof ApiElevenlabsSignedUrlRoute
   '/api/notifications/send-gmail': typeof ApiNotificationsSendGmailRoute
   '/api/twilio/cold-call': typeof ApiTwilioColdCallRoute
@@ -309,6 +452,7 @@ export interface FileRoutesById {
   '/for-patients': typeof ForPatientsRoute
   '/for-physicians': typeof ForPhysiciansRoute
   '/login': typeof LoginRoute
+  '/patient': typeof PatientRouteWithChildren
   '/programs-services': typeof ProgramsServicesRoute
   '/resources': typeof ResourcesRoute
   '/admin/ai-activity': typeof AdminAiActivityRoute
@@ -319,12 +463,29 @@ export interface FileRoutesById {
   '/admin/escalations': typeof AdminEscalationsRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/api/slots': typeof ApiSlotsRoute
+  '/doctor/availability': typeof DoctorAvailabilityRoute
   '/doctor/followups': typeof DoctorFollowupsRoute
+  '/patient/appointments': typeof PatientAppointmentsRoute
+  '/patient/billing': typeof PatientBillingRoute
+  '/patient/doctors': typeof PatientDoctorsRoute
+  '/patient/follow-up': typeof PatientFollowUpRoute
+  '/patient/medications': typeof PatientMedicationsRoute
+  '/patient/messages': typeof PatientMessagesRoute
+  '/patient/notifications': typeof PatientNotificationsRoute
+  '/patient/record': typeof PatientRecordRoute
+  '/patient/results': typeof PatientResultsRoute
+  '/patient/sign-in': typeof PatientSignInRoute
+  '/patient/updates': typeof PatientUpdatesRoute
+  '/patient/video': typeof PatientVideoRoute
   '/specialties/$slug': typeof SpecialtiesSlugRoute
   '/staff/reviews': typeof StaffReviewsRoute
   '/admin/': typeof AdminIndexRoute
   '/doctor/': typeof DoctorIndexRoute
+  '/patient/': typeof PatientIndexRoute
   '/specialties/': typeof SpecialtiesIndexRoute
+  '/api/doctor/availability': typeof ApiDoctorAvailabilityRoute
+  '/api/doctor/blocks': typeof ApiDoctorBlocksRoute
   '/api/elevenlabs/signed-url': typeof ApiElevenlabsSignedUrlRoute
   '/api/notifications/send-gmail': typeof ApiNotificationsSendGmailRoute
   '/api/twilio/cold-call': typeof ApiTwilioColdCallRoute
@@ -348,6 +509,7 @@ export interface FileRouteTypes {
     | '/for-patients'
     | '/for-physicians'
     | '/login'
+    | '/patient'
     | '/programs-services'
     | '/resources'
     | '/admin/ai-activity'
@@ -358,12 +520,29 @@ export interface FileRouteTypes {
     | '/admin/escalations'
     | '/admin/inventory'
     | '/admin/staff'
+    | '/api/slots'
+    | '/doctor/availability'
     | '/doctor/followups'
+    | '/patient/appointments'
+    | '/patient/billing'
+    | '/patient/doctors'
+    | '/patient/follow-up'
+    | '/patient/medications'
+    | '/patient/messages'
+    | '/patient/notifications'
+    | '/patient/record'
+    | '/patient/results'
+    | '/patient/sign-in'
+    | '/patient/updates'
+    | '/patient/video'
     | '/specialties/$slug'
     | '/staff/reviews'
     | '/admin/'
     | '/doctor/'
+    | '/patient/'
     | '/specialties/'
+    | '/api/doctor/availability'
+    | '/api/doctor/blocks'
     | '/api/elevenlabs/signed-url'
     | '/api/notifications/send-gmail'
     | '/api/twilio/cold-call'
@@ -393,12 +572,29 @@ export interface FileRouteTypes {
     | '/admin/escalations'
     | '/admin/inventory'
     | '/admin/staff'
+    | '/api/slots'
+    | '/doctor/availability'
     | '/doctor/followups'
+    | '/patient/appointments'
+    | '/patient/billing'
+    | '/patient/doctors'
+    | '/patient/follow-up'
+    | '/patient/medications'
+    | '/patient/messages'
+    | '/patient/notifications'
+    | '/patient/record'
+    | '/patient/results'
+    | '/patient/sign-in'
+    | '/patient/updates'
+    | '/patient/video'
     | '/specialties/$slug'
     | '/staff/reviews'
     | '/admin'
     | '/doctor'
+    | '/patient'
     | '/specialties'
+    | '/api/doctor/availability'
+    | '/api/doctor/blocks'
     | '/api/elevenlabs/signed-url'
     | '/api/notifications/send-gmail'
     | '/api/twilio/cold-call'
@@ -420,6 +616,7 @@ export interface FileRouteTypes {
     | '/for-patients'
     | '/for-physicians'
     | '/login'
+    | '/patient'
     | '/programs-services'
     | '/resources'
     | '/admin/ai-activity'
@@ -430,12 +627,29 @@ export interface FileRouteTypes {
     | '/admin/escalations'
     | '/admin/inventory'
     | '/admin/staff'
+    | '/api/slots'
+    | '/doctor/availability'
     | '/doctor/followups'
+    | '/patient/appointments'
+    | '/patient/billing'
+    | '/patient/doctors'
+    | '/patient/follow-up'
+    | '/patient/medications'
+    | '/patient/messages'
+    | '/patient/notifications'
+    | '/patient/record'
+    | '/patient/results'
+    | '/patient/sign-in'
+    | '/patient/updates'
+    | '/patient/video'
     | '/specialties/$slug'
     | '/staff/reviews'
     | '/admin/'
     | '/doctor/'
+    | '/patient/'
     | '/specialties/'
+    | '/api/doctor/availability'
+    | '/api/doctor/blocks'
     | '/api/elevenlabs/signed-url'
     | '/api/notifications/send-gmail'
     | '/api/twilio/cold-call'
@@ -458,11 +672,15 @@ export interface RootRouteChildren {
   ForPatientsRoute: typeof ForPatientsRoute
   ForPhysiciansRoute: typeof ForPhysiciansRoute
   LoginRoute: typeof LoginRoute
+  PatientRoute: typeof PatientRouteWithChildren
   ProgramsServicesRoute: typeof ProgramsServicesRoute
   ResourcesRoute: typeof ResourcesRoute
+  ApiSlotsRoute: typeof ApiSlotsRoute
   SpecialtiesSlugRoute: typeof SpecialtiesSlugRoute
   StaffReviewsRoute: typeof StaffReviewsRoute
   SpecialtiesIndexRoute: typeof SpecialtiesIndexRoute
+  ApiDoctorAvailabilityRoute: typeof ApiDoctorAvailabilityRoute
+  ApiDoctorBlocksRoute: typeof ApiDoctorBlocksRoute
   ApiElevenlabsSignedUrlRoute: typeof ApiElevenlabsSignedUrlRoute
   ApiNotificationsSendGmailRoute: typeof ApiNotificationsSendGmailRoute
   ApiTwilioColdCallRoute: typeof ApiTwilioColdCallRoute
@@ -543,6 +761,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/patient': {
+      id: '/patient'
+      path: '/patient'
+      fullPath: '/patient'
+      preLoaderRoute: typeof PatientRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/programs-services': {
       id: '/programs-services'
       path: '/programs-services'
@@ -620,11 +845,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStaffRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/slots': {
+      id: '/api/slots'
+      path: '/api/slots'
+      fullPath: '/api/slots'
+      preLoaderRoute: typeof ApiSlotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/doctor/': {
       id: '/doctor/'
       path: '/'
       fullPath: '/doctor/'
       preLoaderRoute: typeof DoctorIndexRouteImport
+      parentRoute: typeof DoctorRoute
+    }
+    '/doctor/availability': {
+      id: '/doctor/availability'
+      path: '/availability'
+      fullPath: '/doctor/availability'
+      preLoaderRoute: typeof DoctorAvailabilityRouteImport
       parentRoute: typeof DoctorRoute
     }
     '/doctor/followups': {
@@ -633,6 +872,97 @@ declare module '@tanstack/react-router' {
       fullPath: '/doctor/followups'
       preLoaderRoute: typeof DoctorFollowupsRouteImport
       parentRoute: typeof DoctorRoute
+    }
+    '/patient/': {
+      id: '/patient/'
+      path: '/'
+      fullPath: '/patient/'
+      preLoaderRoute: typeof PatientIndexRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/appointments': {
+      id: '/patient/appointments'
+      path: '/appointments'
+      fullPath: '/patient/appointments'
+      preLoaderRoute: typeof PatientAppointmentsRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/billing': {
+      id: '/patient/billing'
+      path: '/billing'
+      fullPath: '/patient/billing'
+      preLoaderRoute: typeof PatientBillingRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/doctors': {
+      id: '/patient/doctors'
+      path: '/doctors'
+      fullPath: '/patient/doctors'
+      preLoaderRoute: typeof PatientDoctorsRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/follow-up': {
+      id: '/patient/follow-up'
+      path: '/follow-up'
+      fullPath: '/patient/follow-up'
+      preLoaderRoute: typeof PatientFollowUpRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/medications': {
+      id: '/patient/medications'
+      path: '/medications'
+      fullPath: '/patient/medications'
+      preLoaderRoute: typeof PatientMedicationsRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/messages': {
+      id: '/patient/messages'
+      path: '/messages'
+      fullPath: '/patient/messages'
+      preLoaderRoute: typeof PatientMessagesRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/notifications': {
+      id: '/patient/notifications'
+      path: '/notifications'
+      fullPath: '/patient/notifications'
+      preLoaderRoute: typeof PatientNotificationsRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/record': {
+      id: '/patient/record'
+      path: '/record'
+      fullPath: '/patient/record'
+      preLoaderRoute: typeof PatientRecordRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/results': {
+      id: '/patient/results'
+      path: '/results'
+      fullPath: '/patient/results'
+      preLoaderRoute: typeof PatientResultsRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/sign-in': {
+      id: '/patient/sign-in'
+      path: '/sign-in'
+      fullPath: '/patient/sign-in'
+      preLoaderRoute: typeof PatientSignInRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/updates': {
+      id: '/patient/updates'
+      path: '/updates'
+      fullPath: '/patient/updates'
+      preLoaderRoute: typeof PatientUpdatesRouteImport
+      parentRoute: typeof PatientRoute
+    }
+    '/patient/video': {
+      id: '/patient/video'
+      path: '/video'
+      fullPath: '/patient/video'
+      preLoaderRoute: typeof PatientVideoRouteImport
+      parentRoute: typeof PatientRoute
     }
     '/specialties/': {
       id: '/specialties/'
@@ -653,6 +983,20 @@ declare module '@tanstack/react-router' {
       path: '/staff/reviews'
       fullPath: '/staff/reviews'
       preLoaderRoute: typeof StaffReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/doctor/availability': {
+      id: '/api/doctor/availability'
+      path: '/api/doctor/availability'
+      fullPath: '/api/doctor/availability'
+      preLoaderRoute: typeof ApiDoctorAvailabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/doctor/blocks': {
+      id: '/api/doctor/blocks'
+      path: '/api/doctor/blocks'
+      fullPath: '/api/doctor/blocks'
+      preLoaderRoute: typeof ApiDoctorBlocksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/elevenlabs/signed-url': {
@@ -765,12 +1109,14 @@ const DoctorPatientsPatientIdRouteWithChildren =
   )
 
 interface DoctorRouteChildren {
+  DoctorAvailabilityRoute: typeof DoctorAvailabilityRoute
   DoctorFollowupsRoute: typeof DoctorFollowupsRoute
   DoctorIndexRoute: typeof DoctorIndexRoute
   DoctorPatientsPatientIdRoute: typeof DoctorPatientsPatientIdRouteWithChildren
 }
 
 const DoctorRouteChildren: DoctorRouteChildren = {
+  DoctorAvailabilityRoute: DoctorAvailabilityRoute,
   DoctorFollowupsRoute: DoctorFollowupsRoute,
   DoctorIndexRoute: DoctorIndexRoute,
   DoctorPatientsPatientIdRoute: DoctorPatientsPatientIdRouteWithChildren,
@@ -778,6 +1124,41 @@ const DoctorRouteChildren: DoctorRouteChildren = {
 
 const DoctorRouteWithChildren =
   DoctorRoute._addFileChildren(DoctorRouteChildren)
+
+interface PatientRouteChildren {
+  PatientAppointmentsRoute: typeof PatientAppointmentsRoute
+  PatientBillingRoute: typeof PatientBillingRoute
+  PatientDoctorsRoute: typeof PatientDoctorsRoute
+  PatientFollowUpRoute: typeof PatientFollowUpRoute
+  PatientMedicationsRoute: typeof PatientMedicationsRoute
+  PatientMessagesRoute: typeof PatientMessagesRoute
+  PatientNotificationsRoute: typeof PatientNotificationsRoute
+  PatientRecordRoute: typeof PatientRecordRoute
+  PatientResultsRoute: typeof PatientResultsRoute
+  PatientSignInRoute: typeof PatientSignInRoute
+  PatientUpdatesRoute: typeof PatientUpdatesRoute
+  PatientVideoRoute: typeof PatientVideoRoute
+  PatientIndexRoute: typeof PatientIndexRoute
+}
+
+const PatientRouteChildren: PatientRouteChildren = {
+  PatientAppointmentsRoute: PatientAppointmentsRoute,
+  PatientBillingRoute: PatientBillingRoute,
+  PatientDoctorsRoute: PatientDoctorsRoute,
+  PatientFollowUpRoute: PatientFollowUpRoute,
+  PatientMedicationsRoute: PatientMedicationsRoute,
+  PatientMessagesRoute: PatientMessagesRoute,
+  PatientNotificationsRoute: PatientNotificationsRoute,
+  PatientRecordRoute: PatientRecordRoute,
+  PatientResultsRoute: PatientResultsRoute,
+  PatientSignInRoute: PatientSignInRoute,
+  PatientUpdatesRoute: PatientUpdatesRoute,
+  PatientVideoRoute: PatientVideoRoute,
+  PatientIndexRoute: PatientIndexRoute,
+}
+
+const PatientRouteWithChildren =
+  PatientRoute._addFileChildren(PatientRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -790,11 +1171,15 @@ const rootRouteChildren: RootRouteChildren = {
   ForPatientsRoute: ForPatientsRoute,
   ForPhysiciansRoute: ForPhysiciansRoute,
   LoginRoute: LoginRoute,
+  PatientRoute: PatientRouteWithChildren,
   ProgramsServicesRoute: ProgramsServicesRoute,
   ResourcesRoute: ResourcesRoute,
+  ApiSlotsRoute: ApiSlotsRoute,
   SpecialtiesSlugRoute: SpecialtiesSlugRoute,
   StaffReviewsRoute: StaffReviewsRoute,
   SpecialtiesIndexRoute: SpecialtiesIndexRoute,
+  ApiDoctorAvailabilityRoute: ApiDoctorAvailabilityRoute,
+  ApiDoctorBlocksRoute: ApiDoctorBlocksRoute,
   ApiElevenlabsSignedUrlRoute: ApiElevenlabsSignedUrlRoute,
   ApiNotificationsSendGmailRoute: ApiNotificationsSendGmailRoute,
   ApiTwilioColdCallRoute: ApiTwilioColdCallRoute,

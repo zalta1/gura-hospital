@@ -4,8 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { conditionsIndex, hospitalInfo, specialtyGroups } from "@/lib/hospital-data";
+import { hospitalInfo, specialtyGroups } from "@/lib/hospital-data";
 import { Logo } from "./Logo";
 
 type MenuItem = { label: string; to: string };
@@ -91,22 +90,18 @@ export function Header() {
           <nav className="hidden items-center gap-1 lg:flex">
             <MegaMenu label="Find a Doctor" to="/find-a-doctor" wide>
               <div className="grid gap-6 md:grid-cols-2">
-                <div>
-                  <p className="eyebrow mb-3">Conditions A–Z</p>
-                  <ScrollArea className="h-64 pr-3">
-                    <ul className="space-y-1.5 text-sm">
-                      {conditionsIndex.map((c) => (
-                        <li key={c}>
-                          <Link
-                            to="/find-a-doctor"
-                            className="text-muted-foreground transition-colors hover:text-primary"
-                          >
-                            {c}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </ScrollArea>
+                <div className="relative h-64 overflow-hidden rounded-lg">
+                  <img
+                    src="/images/find-a-doctor-menu.jpg"
+                    alt="Gura Hospital care team"
+                    className="absolute inset-0 size-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/70 via-primary/15 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-3">
+                    <Button asChild size="pill" variant="gold" className="w-full shadow-card">
+                      <Link to="/find-a-doctor">Find a Doctor</Link>
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <p className="eyebrow mb-3">By Specialty</p>

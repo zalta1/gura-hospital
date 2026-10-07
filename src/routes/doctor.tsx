@@ -1,11 +1,12 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, MessageSquareHeart, Stethoscope } from "lucide-react";
+import { CalendarClock, CalendarDays, MessageSquareHeart, Stethoscope } from "lucide-react";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { requirePortalRoles } from "@/lib/portal/portal-guard";
 
 const doctorNav = [
   { to: "/doctor", label: "My Appointments", icon: CalendarDays },
   { to: "/doctor/followups", label: "Follow-up Results", icon: MessageSquareHeart },
+  { to: "/doctor/availability", label: "My Availability", icon: CalendarClock },
 ];
 
 export const Route = createFileRoute("/doctor")({

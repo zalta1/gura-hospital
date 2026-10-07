@@ -33,9 +33,7 @@ export function PortalShell({ title, navItems, children }: Props) {
       <aside className="flex w-64 shrink-0 flex-col bg-primary text-primary-foreground">
         <div className="border-b border-primary-foreground/10 px-5 py-5">
           <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-md bg-gold text-sm font-bold text-gold-foreground">
-              +
-            </div>
+            <img src="/images/gura-logo.png" alt="" className="size-9 shrink-0 rounded-md bg-white object-contain" />
             <div>
               <p className="font-display text-sm leading-tight">Gura Hospital</p>
               <p className="text-[10px] uppercase tracking-[0.14em] text-gold">{title}</p>
@@ -52,6 +50,7 @@ export function PortalShell({ title, navItems, children }: Props) {
               <Link
                 key={item.to}
                 to={item.to as never}
+                activeOptions={{ exact: item.to === "/admin" || item.to === "/doctor" }}
                 className={cn(
                   "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
                   active

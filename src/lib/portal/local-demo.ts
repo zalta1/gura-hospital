@@ -42,6 +42,12 @@ function hexPad(input: string, len: number) {
   return hex.replace(/[^0-9a-f]/gi, "0").padEnd(len, "0").slice(0, len);
 }
 
+export function slugForDoctorId(doctorId: string) {
+  if (doctorId === LOCAL_AMARA_DOCTOR_ID) return "amara-velloso";
+  if (doctorId === LOCAL_CALLUM_DOCTOR_ID) return "callum-whitfield";
+  return null;
+}
+
 export function doctorIdForSlug(slug: string) {
   if (slug === "amara-velloso") return LOCAL_AMARA_DOCTOR_ID;
   if (slug === "callum-whitfield") return LOCAL_CALLUM_DOCTOR_ID;

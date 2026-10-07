@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/portal/auth";
 import { formatConfirmedSlot, formatDateTime, visitPreferenceLabel } from "@/lib/portal/format";
 import { LOCAL_BOOKING_EVENT } from "@/lib/portal/local-store";
-import { fetchDoctorAppointments, type AppointmentRow } from "@/lib/portal/queries";
+import { fetchDoctorAppointments, setDoctorAppointmentStatus, type AppointmentRow } from "@/lib/portal/queries";
 
 export const Route = createFileRoute("/doctor/")({
   head: () => ({
@@ -74,7 +75,7 @@ function DoctorAppointments() {
           {rows.length === 0 && !isLoading ? (
             <p className="px-4 py-6 text-sm text-muted-foreground">No appointments yet.</p>
           ) : (
-            rows.map((row) => <AppointmentRowCard key={row.id} row={row} />)
+            rows.map((row) => <AppointmentRowCard key={row.id} row={row} doctorId={doctorId ?? ""} />)
           )}
         </div>
       </section>
@@ -82,33 +83,69 @@ function DoctorAppointments() {
   );
 }
 
-function AppointmentRowCard({ row }: { row: AppointmentRow }) {
-  const body = (
-    <article className="flex flex-wrap items-start justify-between gap-3 px-4 py-4 transition-colors hover:bg-surface">
-      <div>
-        <p className="font-medium text-primary">{row.patients?.full_name ?? "Unknown patient"}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{row.reason_for_visit || "No reason recorded"}</p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {row.patients?.insurance || "Insurance not provided"} ·{" "}
-          {visitPreferenceLabel(row.visit_preference, row.campus, row.visit_type)}
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {row.appointment_date && row.appointment_time
-            ? `Confirmed ${formatConfirmedSlot(row.appointment_date, row.appointment_time)}`
-            : `Requested ${formatDateTime(row.datetime)}`}
-        </p>
-        <Badge variant="outline" className="mt-2">
-          {row.status}
-        </Badge>
-      </div>
-      <p className="text-xs font-medium text-gold">Open chart →</p>
-    </article>
+function AppointmentRowCard({ row, doctorId }: { row: AppointmentRow; doctorId: string }) {
+  const queryClient = useQueryClient();
+  const [pending, setPending] = useState<"confirmed" | "cancelled" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const details = (
+    <div>
+      <p className="font-medium text-primary">{row.patients?.full_name ?? "Unknown patient"}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{row.reason_for_visit || "No reason recorded"}</p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {row.patients?.insurance || "Insurance not provided"} ·{" "}
+        {visitPreferenceLabel(row.visit_preference, row.campus, row.visit_type)}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {row.appointment_date && row.appointment_time
+          ? `Visit ${formatConfirmedSlot(row.appointment_date, row.appointment_time)}`
+          : `Requested ${formatDateTime(row.datetime)}`}
+      </p>
+      <Badge variant="outline" className="mt-2">
+        {row.status}
+      </Badge>
+    </div>
   );
 
-  if (!row.patient_id) return body;
+  async function decide(status: "confirmed" | "cancelled") {
+    setActionError(null);
+    setPending(status);
+    try {
+      await setDoctorAppointmentStatus(doctorId, row.id, status);
+      await queryClient.invalidateQueries({ queryKey: ["portal", "doctor-appointments", doctorId] });
+      await queryClient.invalidateQueries({ queryKey: ["free-slots"] });
+      await queryClient.invalidateQueries({ queryKey: ["portal", "availability", doctorId] });
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Could not update this visit.");
+    } finally {
+      setPending(null);
+    }
+  }
+
   return (
-    <Link to="/doctor/patients/$patientId" params={{ patientId: row.patient_id }} className="block">
-      {body}
-    </Link>
+    <article className="flex flex-wrap items-start justify-between gap-3 px-4 py-4">
+      {row.patient_id ? (
+        <Link
+          to="/doctor/patients/$patientId"
+          params={{ patientId: row.patient_id }}
+          className="min-w-0 flex-1 rounded-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        >
+          {details}
+          <p className="mt-2 text-xs font-medium text-gold">Open chart →</p>
+        </Link>
+      ) : (
+        details
+      )}
+      {row.status === "pending" ? (
+        <div className="flex flex-col gap-2">
+          <Button type="button" size="sm" variant="gold" disabled={pending !== null} onClick={() => void decide("confirmed")}>
+            {pending === "confirmed" ? "Confirming…" : "Confirm"}
+          </Button>
+          <Button type="button" size="sm" variant="outlineNavy" disabled={pending !== null} onClick={() => void decide("cancelled")}>
+            {pending === "cancelled" ? "Declining…" : "Decline"}
+          </Button>
+          {actionError ? <p className="max-w-40 text-xs text-destructive">{actionError}</p> : null}
+        </div>
+      ) : null}
+    </article>
   );
 }

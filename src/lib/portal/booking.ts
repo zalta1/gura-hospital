@@ -13,6 +13,7 @@ export type BookingInput = {
   preferredSpecialty: string;
   visitPreference: string;
   doctorSlug: string;
+  startsAt?: string;
 };
 
 function rpcArgs(input: BookingInput) {
@@ -41,6 +42,19 @@ export async function submitBooking(input: BookingInput): Promise<string> {
       () => undefined,
     );
     return id;
+  }
+
+  if (input.startsAt) {
+    const response = await fetch("/api/slots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const body = (await response.json().catch(() => ({}))) as { appointmentId?: string; error?: string };
+    if (!response.ok || !body.appointmentId) {
+      throw new Error(body.error || "That time was just booked. Please choose another opening.");
+    }
+    return body.appointmentId;
   }
 
   const { data, error } = await supabase.rpc("submit_booking", rpcArgs(input));

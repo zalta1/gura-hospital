@@ -1,6 +1,17 @@
 import type { Database, Json } from "@/integrations/supabase/types";
 import { coercePipelineStage } from "@/lib/portal/appointment-stage";
 import { combineAppointmentDateTime } from "@/lib/portal/appointment-slot";
+import {
+  AvailabilityError,
+  SLOT_TAKEN_MESSAGE,
+  assertSlotBookable,
+  hospitalClock,
+  hospitalDateFromIso,
+  sameSlotInstant,
+  statusHoldsSlot,
+  type BusyAppointment,
+} from "@/lib/portal/availability";
+import { readAvailability } from "@/lib/portal/availability-store";
 import { doctorAccountsFromPhysicians } from "@/lib/doctor-accounts";
 import { requestGmailNotification } from "@/lib/notifications/request-gmail-notification";
 import {
@@ -776,7 +787,22 @@ export type LocalBookingInput = {
   visitPreference: string;
   doctorSlug: string;
   id?: string;
+  startsAt?: string;
 };
+
+export function listBusyAppointments(): BusyAppointment[] {
+  hydratePersistedBookings();
+  return db.appointments
+    .filter((appointment) => appointment.doctor_id && appointment.datetime && appointment.appointment_date && appointment.appointment_time)
+    .map((appointment) => ({
+      id: appointment.id,
+      doctorId: appointment.doctor_id as string,
+      startsAt: appointment.datetime,
+      status: appointment.status,
+      patientName: db.patients.find((patient) => patient.id === appointment.patient_id)?.full_name ?? "Patient",
+      patientId: appointment.patient_id,
+    }));
+}
 
 /** Mirror of a remote submit_booking row for local demo auth sessions. */
 export async function submitBooking(input: LocalBookingInput): Promise<string> {
@@ -802,6 +828,26 @@ export async function submitBooking(input: LocalBookingInput): Promise<string> {
   const now = new Date().toISOString();
   const status: Appointment["status"] = doctorId ? "pending" : "unassigned";
   const pipeline_stage: Appointment["pipeline_stage"] = "pending_intake";
+  let slotStart: string | null = null;
+  let slotDate: string | null = null;
+  let slotTime: string | null = null;
+
+  if (input.startsAt) {
+    if (!doctorId) throw new AvailabilityError("validation", "Choose a physician before booking a time.");
+    const schedule = readAvailability();
+    const slot = assertSlotBookable({
+      doctorId,
+      startsAt: input.startsAt,
+      windows: schedule.windows,
+      blocks: schedule.blocks,
+      appointments: listBusyAppointments(),
+    });
+    visitType = slot.visitType;
+    campus = slot.visitType === "telehealth" ? "Telehealth" : slot.location || "Fairmont Ridge";
+    slotStart = slot.startsAt;
+    slotDate = hospitalDateFromIso(slot.startsAt);
+    slotTime = `${hospitalClock(slot.startsAt)}:00`;
+  }
 
   let patient = db.patients.find((p) => (p.email ?? "").toLowerCase() === email);
   if (!patient) {
@@ -834,9 +880,9 @@ export async function submitBooking(input: LocalBookingInput): Promise<string> {
     id: input.id || newId(),
     patient_id: patient.id,
     doctor_id: doctorId,
-    datetime: now,
-    appointment_date: null,
-    appointment_time: null,
+    datetime: slotStart ?? now,
+    appointment_date: slotDate,
+    appointment_time: slotTime,
     status,
     pipeline_stage,
     reason_for_visit: input.reason.trim() || null,
@@ -888,6 +934,14 @@ export async function assignAppointmentDoctor(
   }
 
   const datetime = combineAppointmentDateTime(slot.appointmentDate, slot.appointmentTime);
+  const clash = listBusyAppointments().some(
+    (appointment) =>
+      appointment.id !== appointmentId &&
+      appointment.doctorId === doctorId &&
+      statusHoldsSlot(appointment.status) &&
+      sameSlotInstant(appointment.startsAt, datetime),
+  );
+  if (clash) throw new AvailabilityError("taken", SLOT_TAKEN_MESSAGE);
   const timeStored =
     slot.appointmentTime.trim().length === 5
       ? `${slot.appointmentTime.trim()}:00`
@@ -948,6 +1002,62 @@ export async function assignAppointmentDoctor(
     emailOk: true,
     emailMocked: mail.status === "mocked",
   };
+}
+
+export async function setDoctorAppointmentStatus(
+  actorDoctorId: string,
+  appointmentId: string,
+  status: "confirmed" | "cancelled",
+) {
+  hydratePersistedBookings();
+  const appointment = db.appointments.find((item) => item.id === appointmentId);
+  if (!appointment || appointment.doctor_id !== actorDoctorId) {
+    throw new Error("You can only update your own appointments.");
+  }
+  if (status === "confirmed" && appointment.status !== "pending" && appointment.status !== "confirmed") {
+    throw new Error("Only a pending visit can be confirmed.");
+  }
+  appointment.status = status;
+  if (status === "confirmed") appointment.pipeline_stage = "confirmed";
+  await writeAudit(
+    status === "confirmed" ? "appointment.confirm" : "appointment.decline",
+    "appointments",
+    appointmentId,
+    actorDoctorId,
+  );
+  persistBookings();
+}
+
+export async function cancelSharedAppointment(appointmentId: string) {
+  hydratePersistedBookings();
+  const appointment = db.appointments.find((item) => item.id === appointmentId);
+  if (!appointment) return false;
+  appointment.status = "cancelled";
+  persistBookings();
+  return true;
+}
+
+export async function rescheduleSharedAppointment(appointmentId: string, startsAt: string) {
+  hydratePersistedBookings();
+  const appointment = db.appointments.find((item) => item.id === appointmentId);
+  if (!appointment?.doctor_id) return false;
+  const schedule = readAvailability();
+  const slot = assertSlotBookable({
+    doctorId: appointment.doctor_id,
+    startsAt,
+    windows: schedule.windows,
+    blocks: schedule.blocks,
+    appointments: listBusyAppointments(),
+    excludeAppointmentId: appointmentId,
+  });
+  appointment.datetime = slot.startsAt;
+  appointment.appointment_date = hospitalDateFromIso(slot.startsAt);
+  appointment.appointment_time = `${hospitalClock(slot.startsAt)}:00`;
+  appointment.visit_type = slot.visitType;
+  appointment.campus = slot.visitType === "telehealth" ? "Telehealth" : slot.location || appointment.campus;
+  if (slot.visitType === "telehealth") appointment.visit_preference = "telehealth";
+  persistBookings();
+  return true;
 }
 
 export async function fetchPatientTimeline(patientId: string): Promise<PatientTimeline> {

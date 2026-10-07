@@ -1,12 +1,30 @@
 import { Link } from "@tanstack/react-router";
 import { Printer, MapPin, Phone, UserRound } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { Physician } from "@/lib/hospital-data";
+import { nextOpeningLabel } from "@/lib/portal/availability-api";
+import { doctorIdForSlug } from "@/lib/portal/local-demo";
 
 export function PhysicianCard({ physician }: { physician: Physician }) {
   const [open, setOpen] = useState(false);
+  const [nextAvailable, setNextAvailable] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      void nextOpeningLabel(doctorIdForSlug(physician.id)).then((label) => {
+        if (!cancelled) setNextAvailable(label);
+      });
+    };
+    load();
+    window.addEventListener("focus", load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", load);
+    };
+  }, [physician.id]);
 
   return (
     <>
@@ -18,6 +36,7 @@ export function PhysicianCard({ physician }: { physician: Physician }) {
             {physician.credentials ? `, ${physician.credentials}` : ""}
           </h3>
           <p className="mt-1 text-xs tracking-wide text-gold">{physician.specialty}</p>
+          {nextAvailable ? <p className="mt-2 text-xs text-primary-foreground/80">{nextAvailable}</p> : null}
         </div>
         <div className="flex flex-col gap-4 px-6 py-5">
           <p className="text-sm text-muted-foreground">{physician.subSpecialty}</p>

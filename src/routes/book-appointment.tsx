@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Bot, CalendarCheck, CheckCircle2, ShieldCheck } from "lucide-react";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,10 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SlotPicker } from "@/components/portal/SlotPicker";
 import { VoiceNavigator, type VoiceFormContext } from "@/components/site/VoiceNavigator";
 import { PageHero } from "@/components/site/PageHero";
 import { insuranceProviders, physicians, specialtyGroups } from "@/lib/hospital-data";
+import { formatHospitalDateTime, type FreeSlot } from "@/lib/portal/availability";
 import { submitBooking } from "@/lib/portal/booking";
+import { doctorIdForSlug } from "@/lib/portal/local-demo";
 import { unlockWebAudio } from "@/lib/voice/microphone";
 
 type Search = { doctor?: string | undefined };
@@ -49,6 +52,15 @@ function BookAppointment() {
   const [specialty, setSpecialty] = useState(selected?.specialtySlug ?? "");
   const [insurance, setInsurance] = useState("");
   const [visit, setVisit] = useState("in-person");
+  const [doctorSlug, setDoctorSlug] = useState(doctor ?? "");
+  const [selectedSlot, setSelectedSlot] = useState<FreeSlot | null>(null);
+  const [openingsStatus, setOpeningsStatus] = useState<"loading" | "error" | "empty" | "ready" | "idle">("idle");
+  const [heldLabel, setHeldLabel] = useState<string | null>(null);
+  const chosen = physicians.find((physician) => physician.id === doctorSlug) ?? selected;
+
+  useEffect(() => {
+    if (doctor) setDoctorSlug(doctor);
+  }, [doctor]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,7 +69,18 @@ function BookAppointment() {
     const form = new FormData(e.currentTarget);
     const preferredSpecialty =
       specialtyGroups.find((g) => g.slug === specialty)?.title ?? specialty;
+    const intent = String(form.get("intent") ?? "book");
+    const bookingDoctor = doctorSlug;
+    const holdSlot = Boolean(bookingDoctor) && intent !== "callback" && openingsStatus === "ready";
+    if (holdSlot && !selectedSlot) {
+      setError("Choose an open time.");
+      setBusy(false);
+      return;
+    }
     try {
+      const startsAt = holdSlot && selectedSlot ? selectedSlot.startsAt : undefined;
+      if (startsAt) setHeldLabel(formatHospitalDateTime(startsAt));
+      else setHeldLabel(null);
       await submitBooking({
         fullName: String(form.get("name") ?? ""),
         email: String(form.get("email") ?? ""),
@@ -66,8 +89,9 @@ function BookAppointment() {
         insurance,
         reason: String(form.get("reason") ?? ""),
         preferredSpecialty,
-        visitPreference: visit,
-        doctorSlug: doctor ?? "",
+        visitPreference: selectedSlot && holdSlot ? (selectedSlot.visitType === "telehealth" ? "telehealth" : visit) : visit,
+        doctorSlug: bookingDoctor,
+        ...(startsAt ? { startsAt } : {}),
       });
       setSubmitted(true);
     } catch (err) {
@@ -96,8 +120,9 @@ function BookAppointment() {
               <CheckCircle2 className="mx-auto size-10 text-gold" />
               <h3 className="text-xl">Request received</h3>
               <p className="mx-auto max-w-md text-sm text-muted-foreground">
-                A care navigator will confirm time, provider, and insurance. You may also continue with
-                the live navigation agent if you have more to add.
+                {heldLabel
+                  ? `Your ${heldLabel} visit is held until your doctor confirms it. If the time is declined or cancelled, it opens for other patients.`
+                  : "A care navigator will confirm time, provider, and insurance. You may also continue with the live navigation agent if you have more to add."}
               </p>
               <Button size="pillLg" variant="outlineNavy" onClick={() => setSubmitted(false)}>
                 Submit another request
@@ -105,15 +130,39 @@ function BookAppointment() {
             </div>
           ) : (
             <form ref={formRef} className="space-y-6 px-6 py-7" onSubmit={(e) => void onSubmit(e)}>
-              {selected && (
+              {chosen && (
                 <p className="bg-surface px-4 py-3 text-sm text-muted-foreground">
                   Requesting a visit with{" "}
                   <span className="font-medium text-foreground">
-                    {selected.name}, {selected.credentials}
+                    {chosen.name}, {chosen.credentials}
                   </span>{" "}
-                  — {selected.specialty}
+                  — {chosen.specialty}
                 </p>
               )}
+
+              <div className="space-y-2">
+                <Label>Physician</Label>
+                <Select
+                  {...(doctorSlug ? { value: doctorSlug } : {})}
+                  onValueChange={(value) => {
+                    setDoctorSlug(value);
+                    setSelectedSlot(null);
+                    const match = physicians.find((physician) => physician.id === value);
+                    if (match) setSpecialty(match.specialtySlug);
+                  }}
+                >
+                  <SelectTrigger aria-label="Physician">
+                    <SelectValue placeholder="Select a physician" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {physicians.map((physician) => (
+                      <SelectItem key={physician.id} value={physician.id}>
+                        {physician.name}, {physician.credentials}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="reason">Reason for visit</Label>
@@ -161,7 +210,14 @@ function BookAppointment() {
 
               <div className="space-y-3">
                 <Label>Visit preference</Label>
-                <RadioGroup value={visit} onValueChange={setVisit} className="flex flex-wrap gap-6">
+                <RadioGroup
+                  value={visit}
+                  onValueChange={(value) => {
+                    setVisit(value);
+                    setSelectedSlot(null);
+                  }}
+                  className="flex flex-wrap gap-6"
+                >
                   {[
                     { v: "in-person", l: "In person — Fairmont Ridge" },
                     { v: "alder-bay", l: "In person — Alder Bay" },
@@ -176,6 +232,22 @@ function BookAppointment() {
                   ))}
                 </RadioGroup>
               </div>
+
+              {doctorSlug ? (
+                <div className="space-y-3">
+                  <Label>Open times</Label>
+                  <SlotPicker
+                    doctorId={doctorIdForSlug(doctorSlug)}
+                    visit={visit === "telehealth" || visit === "alder-bay" ? visit : "in-person"}
+                    selectedStartsAt={selectedSlot?.startsAt ?? null}
+                    onSelect={setSelectedSlot}
+                    onAvailability={(state) => setOpeningsStatus(state.status)}
+                  />
+                  {openingsStatus === "empty" ? (
+                    <p className="text-sm text-muted-foreground">Request a callback and a navigator will contact you.</p>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -203,8 +275,20 @@ function BookAppointment() {
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-                <Button type="submit" size="pillLg" disabled={busy}>
-                  {busy ? "Submitting…" : "Submit request"}
+                {doctorSlug && openingsStatus === "ready" ? (
+                  <Button type="submit" name="intent" value="book" size="pillLg" disabled={busy || !selectedSlot}>
+                    {busy ? "Submitting…" : "Book this time"}
+                  </Button>
+                ) : null}
+                <Button
+                  type="submit"
+                  name="intent"
+                  value={doctorSlug ? "callback" : "book"}
+                  size="pillLg"
+                  variant={doctorSlug && openingsStatus === "ready" ? "outlineNavy" : "default"}
+                  disabled={busy || openingsStatus === "loading"}
+                >
+                  {busy ? "Submitting…" : doctorSlug ? "Request a callback" : "Submit request"}
                 </Button>
                 <Button
                   type="button"
@@ -214,8 +298,8 @@ function BookAppointment() {
                     unlockWebAudio();
                     const fd = formRef.current ? new FormData(formRef.current) : null;
                     setVoiceContext({
-                      doctorSlug: doctor ?? "",
-                      doctorName: selected ? `${selected.name}, ${selected.credentials}` : "",
+                      doctorSlug,
+                      doctorName: chosen ? `${chosen.name}, ${chosen.credentials}` : "",
                       reason: String(fd?.get("reason") ?? ""),
                       insurance,
                       preferredSpecialty:

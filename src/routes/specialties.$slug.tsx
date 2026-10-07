@@ -1,8 +1,83 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Check } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { MediaPlaceholder } from "@/components/site/MediaPlaceholder";
 import { physicians, specialtyGroups } from "@/lib/hospital-data";
+
+const specialtyGallery: Record<
+  string,
+  | {
+      layout: "pair";
+      clinical: { src: string; alt: string };
+      provider: { src: string; alt: string };
+    }
+  | { layout: "feature"; feature: { src: string; alt: string } }
+> = {
+  "cardiology-electrophysiology": {
+    layout: "pair",
+    clinical: {
+      src: "/images/specialties/heart-vascular/clinical-photo.jpg",
+      alt: "Gura Hospital heart surgery team at work",
+    },
+    provider: {
+      src: "/images/specialties/heart-vascular/provider-portrait.jpg",
+      alt: "Gura Hospital heart and vascular surgeon",
+    },
+  },
+  orthopedics: {
+    layout: "pair",
+    clinical: {
+      src: "/images/specialties/orthopedics/clinical-photo.jpg",
+      alt: "Orthopedic diagnostic imaging of bones and joints",
+    },
+    provider: {
+      src: "/images/specialties/orthopedics/provider-portrait.jpg",
+      alt: "Advanced orthopedic imaging and treatment technology at Gura Hospital",
+    },
+  },
+  neurology: {
+    layout: "pair",
+    clinical: {
+      src: "/images/specialties/neurology/clinical-photo.jpg",
+      alt: "Brain MRI scans reviewed by the neurology team",
+    },
+    provider: {
+      src: "/images/specialties/neurology/provider-portrait.jpg",
+      alt: "Neurologist reviewing head and spine imaging",
+    },
+  },
+  gastroenterology: {
+    layout: "pair",
+    clinical: {
+      src: "/images/specialties/digestive-health/clinical-photo.jpg",
+      alt: "Anatomical illustration of the digestive system",
+    },
+    provider: {
+      src: "/images/specialties/digestive-health/provider-portrait.jpg",
+      alt: "Digestive health consultation and nutrition planning",
+    },
+  },
+  "womens-health": {
+    layout: "feature",
+    feature: {
+      src: "/images/specialties/womens-health/feature-photo.jpg",
+      alt: "Women’s health awareness and care at Gura Hospital",
+    },
+  },
+  "primary-care": {
+    layout: "feature",
+    feature: {
+      src: "/images/specialties/primary-care/feature-photo.jpg",
+      alt: "Primary care at Gura Hospital",
+    },
+  },
+};
 
 export const Route = createFileRoute("/specialties/$slug")({
   loader: ({ params }) => {
@@ -17,12 +92,13 @@ export const Route = createFileRoute("/specialties/$slug")({
       };
     }
     const { group } = loaderData;
+    const description = group.description[0] ?? group.blurb;
     return {
       meta: [
         { title: `${group.title} | Gura Hospital` },
-        { name: "description", content: group.blurb },
+        { name: "description", content: description },
         { property: "og:title", content: `${group.title} | Gura Hospital` },
-        { property: "og:description", content: group.blurb },
+        { property: "og:description", content: description },
       ],
     };
   },
@@ -33,6 +109,8 @@ export const Route = createFileRoute("/specialties/$slug")({
 function SpecialtyDetail() {
   const { group } = Route.useLoaderData();
   const docs = physicians.filter((p) => p.specialtySlug === group.slug);
+  const heroLead = group.description[0] ?? group.blurb;
+  const gallery = specialtyGallery[group.slug];
 
   return (
     <>
@@ -45,7 +123,7 @@ function SpecialtyDetail() {
         <div className="relative mx-auto max-w-7xl px-4 py-20 md:py-28">
           <p className="eyebrow mb-3">Specialty</p>
           <h1 className="max-w-3xl text-4xl text-primary-foreground md:text-5xl">{group.title}</h1>
-          <p className="mt-4 max-w-2xl text-primary-foreground/75">{group.blurb}</p>
+          <p className="mt-4 max-w-2xl text-primary-foreground/75">{heroLead}</p>
           <div className="mt-8">
             <Button asChild size="pillLg" variant="gold">
               <Link to="/find-a-doctor" search={{ specialty: group.slug }}>
@@ -60,19 +138,31 @@ function SpecialtyDetail() {
         <div className="space-y-5">
           <p className="eyebrow">About the program</p>
           <h2 className="text-3xl">Care built around your diagnosis</h2>
-          <p className="text-muted-foreground">
-            Our {group.title.toLowerCase()} team meets weekly to review complex cases together, so
-            your plan reflects the judgment of several specialists rather than one. Imaging,
-            laboratory work and follow-up visits are coordinated by a single navigator who knows your
-            history.
-          </p>
-          <p className="text-muted-foreground">
-            All details on this page — including provider names, offices and outcomes — are fictional
-            placeholder content created for a design demonstration.
-          </p>
+          {group.description.map((paragraph) => (
+            <p key={paragraph.slice(0, 48)} className="text-muted-foreground leading-relaxed">
+              {paragraph}
+            </p>
+          ))}
           <div className="grid gap-4 pt-2 sm:grid-cols-2">
-            <MediaPlaceholder label="Clinical photo" className="aspect-4/3 rounded-lg" />
-            <MediaPlaceholder label="Provider portrait" className="aspect-4/3 rounded-lg" />
+            {gallery?.layout === "feature" ? (
+              <div className="relative col-span-full aspect-[21/9] min-h-[14rem] overflow-hidden rounded-lg bg-surface shadow-card sm:aspect-[2/1] sm:min-h-[16rem]">
+                <img
+                  src={gallery.feature.src}
+                  alt={gallery.feature.alt}
+                  className="absolute inset-0 size-full object-cover object-center"
+                />
+              </div>
+            ) : gallery?.layout === "pair" ? (
+              <>
+                <SpecialtyPhoto src={gallery.clinical.src} alt={gallery.clinical.alt} />
+                <SpecialtyPhoto src={gallery.provider.src} alt={gallery.provider.alt} />
+              </>
+            ) : (
+              <>
+                <MediaPlaceholder label="Clinical photo" className="aspect-4/3 rounded-lg" />
+                <MediaPlaceholder label="Provider portrait" className="aspect-4/3 rounded-lg" />
+              </>
+            )}
           </div>
         </div>
 
@@ -105,7 +195,56 @@ function SpecialtyDetail() {
           </div>
         </aside>
       </section>
+
+      {group.accordion.length > 0 ? (
+        <section className="border-t border-border bg-surface">
+          <div className="mx-auto max-w-7xl px-4 py-16">
+            {group.accordionHeading ? (
+              <div className="mb-8 max-w-3xl">
+                <p className="eyebrow mb-3">Program highlights</p>
+                <h2 className="text-3xl md:text-4xl">{group.accordionHeading}</h2>
+              </div>
+            ) : null}
+            <Accordion
+              type="single"
+              collapsible
+              className="mx-auto max-w-4xl rounded-lg border border-border bg-card px-5 shadow-card"
+            >
+              {group.accordion.map((item, index) => (
+                <AccordionItem key={item.title} value={`item-${index}`}>
+                  <AccordionTrigger>{item.title}</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3 leading-relaxed">
+                      {item.paragraphs.map((p) => (
+                        <p key={p.slice(0, 56)}>{p}</p>
+                      ))}
+                      {item.bullets && item.bullets.length > 0 ? (
+                        <ul className="list-disc space-y-1.5 pl-5 text-muted-foreground">
+                          {item.bullets.map((b) => (
+                            <li key={b}>{b}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      {item.afterBullets?.map((p) => (
+                        <p key={p.slice(0, 56)}>{p}</p>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </section>
+      ) : null}
     </>
+  );
+}
+
+function SpecialtyPhoto({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-surface shadow-card">
+      <img src={src} alt={alt} className="absolute inset-0 size-full object-cover object-center" />
+    </div>
   );
 }
 
