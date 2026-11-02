@@ -47,7 +47,11 @@ def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
 
 @router.post("/demo-login", response_model=TokenResponse)
 def demo_login(body: DemoLoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    """Hackathon helper — maps a persona to a seeded account. TODO: disable in production."""
+    """Development helper — maps a persona to a seeded account. Strictly disabled outside local dev."""
+    settings = get_settings()
+    if not settings.allow_demo_login or settings.environment.lower() not in ("local", "dev", "development", "test"):
+        raise AppError("Demo login is strictly disabled in this environment.", 403)
+
     emails = {
         "patient": "jordan.avery@patient.example",
         "physician": "amara.velloso@gura.example",

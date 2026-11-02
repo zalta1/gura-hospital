@@ -531,7 +531,14 @@ def invoke_tool(db: Session, ctx: SessionContext, name: str, args: dict[str, Any
     except PermissionError as exc:
         raise AppError(str(exc), 403) from exc
     summary = str(result)[:500]
-    _audit_action(db, ctx, name, args or {}, summary, status)
+    # If the tool created a record with an id, include it in arguments/payload so review handlers can identify it precisely
+    payload_args = dict(args or {})
+    if isinstance(result, dict):
+        if "plan_id" in result:
+            payload_args["plan_id"] = result["plan_id"]
+        if "message_id" in result:
+            payload_args["message_id"] = result["message_id"]
+    _audit_action(db, ctx, name, payload_args, summary, status)
     if name in PENDING_REVIEW:
         result = {**result, "review_status": ReviewStatus.pending_review.value}
     return result

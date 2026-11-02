@@ -21,9 +21,20 @@ def _ctx_from_token(db, token: str, session_id: UUID) -> SessionContext:
     session = db.get(ConversationSession, session_id)
     if not session or session.organization_id != org:
         raise ValueError("Unknown conversation.")
+
     patient_id = UUID(payload["patient_id"]) if payload.get("patient_id") else session.patient_id
     if patient_id is None:
         patient_id = db.scalar(select(Patient.id).where(Patient.user_id == user_id))
+
+    # Authorization verification: Enforce session ownership to prevent cross-patient hijacking
+    if role == Role.patient:
+        # A patient can only attach to a conversation session assigned to their own user_id or patient_id
+        if session.user_id and session.user_id != user_id:
+            raise PermissionError("Access denied: You do not own this intake session.")
+        if session.patient_id and patient_id and session.patient_id != patient_id:
+            raise PermissionError("Access denied: Session belongs to a different patient.")
+    elif role not in (Role.physician, Role.staff, Role.admin, Role.service_account):
+        raise PermissionError("Unauthorized role for intake WebSocket.")
     return SessionContext(
         user_id=user_id,
         organization_id=org,

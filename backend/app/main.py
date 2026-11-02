@@ -14,8 +14,11 @@ from app.jobs.runner import start_scheduler
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    # Hackathon convenience. Production should run alembic only.
-    Base.metadata.create_all(bind=engine)
+    settings = get_settings()
+    # In development/local, auto-create tables for developer velocity.
+    # In production/staging, database schema must be managed strictly via Alembic migrations.
+    if settings.environment.lower() in ("local", "dev", "development", "test"):
+        Base.metadata.create_all(bind=engine)
     start_scheduler()
     yield
 
@@ -26,18 +29,20 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         description=(
             "AI-powered healthcare navigation API. Agents call named tools only. "
-            "Clinicians remain responsible for clinical decisions. "
-            "TODO(HIPAA): BAAs, field-level encryption, IdP SSO, and audit SIEM."
+            "Clinicians remain responsible for clinical decisions."
         ),
         version="0.1.0",
         lifespan=lifespan,
+        docs_url="/docs" if settings.debug else None,
+        redoc_url="/redoc" if settings.debug else None,
+        openapi_url="/openapi.json" if settings.debug else None,
     )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
     )
 
     @app.middleware("http")

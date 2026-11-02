@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { authorizeOutboundApiRequest } from "@/lib/api-auth";
 import { sendTwilioSms, TwilioSmsError } from "@/lib/sms/twilio";
 
 async function sendSmsPost({ request }: { request: Request }) {
+  const auth = authorizeOutboundApiRequest(request);
+  if (!auth.authorized) {
+    return Response.json({ ok: false, error: auth.reason || "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const json = (await request.json().catch(() => ({}))) as {
       body?: string;

@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { authorizeOutboundApiRequest } from "@/lib/api-auth";
 import { createElevenLabsSignedUrl, SignedUrlError } from "@/lib/voice/create-signed-url";
 
-async function signedUrlGet() {
+async function signedUrlGet({ request }: { request: Request }) {
+  const auth = authorizeOutboundApiRequest(request);
+  if (!auth.authorized) {
+    return Response.json({ error: auth.reason || "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await createElevenLabsSignedUrl();
     return Response.json(body);
