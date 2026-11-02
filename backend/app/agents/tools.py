@@ -377,7 +377,10 @@ def record_patient_response(db: Session, ctx: SessionContext, args: dict[str, An
 
 
 def create_escalation(db: Session, ctx: SessionContext, args: dict[str, Any]) -> dict[str, Any]:
-    severity = EscalationSeverity(str(args.get("severity") or "high"))
+    severity_str = str(args.get("severity") or "high").lower()
+    if severity_str not in EscalationSeverity.__members__.values() and severity_str not in ("low", "medium", "high", "emergency"):
+        severity_str = "high"
+    severity = EscalationSeverity(severity_str)
     row = Escalation(
         organization_id=ctx.organization_id,
         patient_id=ctx.patient_id,
@@ -395,6 +398,111 @@ def create_escalation(db: Session, ctx: SessionContext, args: dict[str, Any]) ->
     }
 
 
+def verify_insurance_coverage(
+    db: Session, ctx: SessionContext, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Checks whether a patient's payer/plan is accepted by in-network providers or a specific provider."""
+    payer_name = str(args.get("payer_name") or "").strip().lower()
+    provider_id_raw = args.get("provider_id")
+
+    # In-network mock directory for Gura Academic Medical Center
+    ACCEPTED_PAYERS = {
+        "blue cross blue shield": {"tier": "Tier 1 - Preferred", "copay_estimate": "$25"},
+        "bcbs": {"tier": "Tier 1 - Preferred", "copay_estimate": "$25"},
+        "aetna": {"tier": "Tier 1 - Preferred", "copay_estimate": "$30"},
+        "united healthcare": {"tier": "Tier 2 - In-Network", "copay_estimate": "$40"},
+        "cigna": {"tier": "Tier 2 - In-Network", "copay_estimate": "$35"},
+        "medicare": {"tier": "Tier 1 - Standard Government", "copay_estimate": "$0 - $20"},
+        "medicaid": {"tier": "Tier 1 - State Managed", "copay_estimate": "$0"},
+    }
+
+    if not payer_name:
+        return {
+            "verified": False,
+            "message": "Please provide an insurance payer name (e.g., Blue Cross, Aetna, Medicare).",
+            "accepted_payers": ["Blue Cross Blue Shield", "Aetna", "United Healthcare", "Cigna", "Medicare", "Medicaid"],
+        }
+
+    matched = None
+    for name, details in ACCEPTED_PAYERS.items():
+        if name in payer_name:
+            matched = details
+            break
+
+    if matched:
+        return {
+            "verified": True,
+            "in_network": True,
+            "payer": payer_name.title(),
+            "tier": matched["tier"],
+            "copay_estimate": matched["copay_estimate"],
+            "requires_referral": False,
+            "message": f"{payer_name.title()} is in-network at Gura Hospital. Estimated copay: {matched['copay_estimate']}.",
+        }
+
+    return {
+        "verified": True,
+        "in_network": False,
+        "payer": payer_name.title(),
+        "requires_prior_auth": True,
+        "message": f"{payer_name.title()} is not in our direct network. Out-of-network benefits or prior authorization may apply.",
+    }
+
+
+def generate_sbar_summary(
+    db: Session, ctx: SessionContext, args: dict[str, Any]
+) -> dict[str, Any]:
+    """Generates a structured SBAR (Situation, Background, Assessment, Recommendation) clinical intake summary
+
+    Held in PENDING_REVIEW until signed or edited by an attending clinician.
+    """
+    if ctx.role not in (Role.physician, Role.staff, Role.service_account, Role.admin):
+        raise PermissionError("Only care team or authorized agent may generate clinical summaries.")
+
+    patient_id_raw = args.get("patient_id") or ctx.patient_id
+    if not patient_id_raw:
+        raise AppError("patient_id is required to compile SBAR summary", 400)
+
+    try:
+        pid = UUID(str(patient_id_raw))
+    except ValueError as exc:
+        raise AppError("Invalid patient_id format", 400) from exc
+
+    pat = (
+        db.execute(
+            select(Patient).where(
+                Patient.organization_id == ctx.organization_id,
+                Patient.id == pid,
+            )
+        )
+        .scalars()
+        .first()
+    )
+    if not pat:
+        raise AppError("Patient not found", 404)
+
+    symptoms = str(args.get("symptoms") or pat.notes or "Patient presented via digital navigation intake.")
+    specialty = str(args.get("specialty") or pat.specialty_hint or "General Medicine")
+    vitals = args.get("vitals") or {}
+
+    sbar_text = (
+        f"--- CLINICAL INTAKE DRAFT (SBAR) ---\n"
+        f"PATIENT: {pat.first_name} (DOB: {pat.date_of_birth or 'On File'})\n"
+        f"SITUATION: Patient initiated appointment intake for {specialty}. Stated symptoms: {symptoms}\n"
+        f"BACKGROUND: Timezone {pat.preferred_timezone}. Verified in-system intake profile.\n"
+        f"ASSESSMENT (PRE-CLINICAL): Non-diagnostic algorithmic triage. Vital signs noted: {vitals if vitals else 'None captured'}.\n"
+        f"RECOMMENDATION: Comprehensive clinician review, formal diagnostic assessment, and personalized follow-up.\n"
+        f"STATUS: PENDING CLINICIAN SIGNATURE."
+    )
+
+    return {
+        "patient_id": str(pat.id),
+        "sbar_note": sbar_text,
+        "review_status": ReviewStatus.pending_review.value,
+        "requires_clinician_signature": True,
+    }
+
+
 REGISTRY: dict[str, ToolFn] = {
     "get_patient_profile": get_patient_profile,
     "save_intake_information": save_intake_information,
@@ -407,6 +515,8 @@ REGISTRY: dict[str, ToolFn] = {
     "create_followup_plan": create_followup_plan,
     "record_patient_response": record_patient_response,
     "create_escalation": create_escalation,
+    "verify_insurance_coverage": verify_insurance_coverage,
+    "generate_sbar_summary": generate_sbar_summary,
 }
 
 
