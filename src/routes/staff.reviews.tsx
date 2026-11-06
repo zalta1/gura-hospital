@@ -22,6 +22,23 @@ type ReviewItem = {
   payload: Record<string, unknown>;
 };
 
+function getUrgencyBadge(item: ReviewItem) {
+  const summaryLower = (item.summary || "").toLowerCase();
+  const payloadStr = JSON.stringify(item.payload || "").toLowerCase();
+  const fullText = `${summaryLower} ${payloadStr}`;
+
+  if (item.action_type === "create_escalation" || fullText.includes("emergency") || fullText.includes("esi_1")) {
+    return <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">Critical / Emergency</span>;
+  }
+  if (fullText.includes("urgent") || fullText.includes("esi_3") || fullText.includes("fever") || fullText.includes("pain")) {
+    return <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Urgent Priority</span>;
+  }
+  if (item.action_type === "generate_sbar_summary") {
+    return <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">Clinical SBAR Draft</span>;
+  }
+  return <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">Routine Review</span>;
+}
+
 function StaffReviews() {
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -134,9 +151,24 @@ function StaffReviews() {
                 here.
               </p>
             ) : (
-              items.map((item) => (
+              items
+                .slice()
+                .sort((a, b) => {
+                  const prio = (x: ReviewItem) => {
+                    const str = `${x.summary} ${JSON.stringify(x.payload)}`.toLowerCase();
+                    if (x.action_type === "create_escalation" || str.includes("emergency") || str.includes("esi_1")) return 3;
+                    if (str.includes("urgent") || str.includes("esi_3")) return 2;
+                    if (x.action_type === "generate_sbar_summary") return 1;
+                    return 0;
+                  };
+                  return prio(b) - prio(a);
+                })
+                .map((item) => (
                 <article key={item.id} className="border border-border bg-card p-6 shadow-card">
-                  <p className="nav-label text-gold">{item.action_type}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="nav-label text-gold">{item.action_type}</p>
+                    {getUrgencyBadge(item)}
+                  </div>
                   <h3 className="mt-2 text-lg">{item.summary}</h3>
                   <pre className="mt-3 overflow-x-auto bg-surface p-3 text-xs">
                     {JSON.stringify(item.payload, null, 2)}
